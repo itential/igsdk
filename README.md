@@ -1,201 +1,212 @@
 # igsdk
 
-<!--
-MAINTAINER: Add badges for your project. Common badges include:
-- Build status (GitHub Actions)
-- Code coverage
-- License
-- Version/Release
-- Downloads
-
-Example badges (update URLs for your project):
-
 [![Build Status](https://github.com/itential/igsdk/actions/workflows/ci.yml/badge.svg)](https://github.com/itential/igsdk/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/itential/igsdk)](https://github.com/itential/igsdk/releases)
--->
 
-[![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-
-<!--
-MAINTAINER: Write a clear, concise description of what your project does.
-This should be 2-3 sentences that answer:
-- What problem does this solve?
-- Who is it for?
-- What makes it useful?
-
-Example:
-"A high-performance CLI tool for managing network device configurations.
-Designed for network engineers who need to automate bulk changes across
-multiple vendors with built-in validation and rollback support."
--->
-
-A brief description of what igsdk does and why it exists.
+A Go SDK for the Itential Automation Platform and Itential Automation Gateway. It provides
+idiomatic HTTP clients with automatic authentication, TTL-based re-authentication, structured
+logging with sensitive-data redaction, and context-aware request tracing.
 
 ## Features
 
-<!--
-MAINTAINER: List 4-6 key features that highlight what makes your project valuable.
-Use action-oriented language and be specific about benefits.
-
-Example:
-- **Fast execution** - Processes 1000+ devices in parallel
-- **Multi-vendor support** - Works with Cisco, Juniper, Arista, and more
-- **Safe by default** - Dry-run mode and automatic rollback on failures
-- **Extensible** - Plugin system for custom device types
--->
-
-- **Feature one** - Brief description of the feature
-- **Feature two** - Brief description of the feature
-- **Feature three** - Brief description of the feature
-- **Feature four** - Brief description of the feature
+- **Dual-client support** - Separate `PlatformClient` and `GatewayClient` for the Itential Automation Platform and Gateway
+- **Automatic authentication** - Basic Auth and OAuth 2.0 (Client Credentials) handled transparently on every request
+- **TTL-based re-authentication** - Configurable token lifetimes with automatic re-auth before expiry
+- **Structured logging** - Text and JSON loggers built on `log/slog` with optional sensitive-data redaction
+- **Context-aware tracing** - Attach trace IDs and correlation fields to a `context.Context`; they appear in all SDK log entries for that request
+- **Concurrency-safe** - Both clients are safe for use by multiple goroutines
 
 ## Requirements
 
-<!--
-MAINTAINER: List all prerequisites needed to use your project.
-Be specific about versions where it matters.
-
-Examples by tech stack:
-- Python: Python 3.10+, pip or uv
-- Node.js: Node.js 18+, npm 9+
-- Go: Go 1.21+
-- Rust: Rust 1.70+, cargo
--->
-
-- Requirement 1 (e.g., Python 3.10+)
-- Requirement 2 (e.g., specific system dependency)
+- Go 1.24+
 
 ## Installation
 
-<!--
-MAINTAINER: Provide clear installation instructions for all supported methods.
-Order from simplest/most common to advanced. Include copy-pasteable commands.
-
-Common patterns:
-- Package managers (pip, npm, brew, cargo)
-- Binary releases
-- Building from source
--->
-
-### Quick Install
-
 ```bash
-# Add your primary installation command here
-# Examples:
-# pip install igsdk
-# npm install -g igsdk
-# brew install itential/tap/igsdk
-# go install github.com/itential/igsdk@latest
-```
-
-### From Source
-
-```bash
-git clone https://github.com/itential/igsdk.git
-cd igsdk
-
-# Add build/install commands for your tech stack
-# Examples:
-# pip install -e .
-# npm install && npm run build
-# go build -o igsdk .
-# cargo build --release
+go get github.com/itential/igsdk
 ```
 
 ## Quick Start
 
-<!--
-MAINTAINER: Show the simplest possible usage that demonstrates value.
-This should be a "hello world" equivalent that works in under a minute.
-Include expected output where helpful.
--->
+```go
+package main
 
-```bash
-# Show the most basic usage example
-igsdk --help
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/itential/igsdk"
+)
+
+func main() {
+    client, err := igsdk.NewPlatformClient("platform.example.com",
+        igsdk.WithBasicAuth("admin", "password"),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    resp, err := client.Get(context.Background(), "/health/server", nil)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println(resp.StatusCode())
+}
 ```
-
-<!--
-MAINTAINER: Add a real-world example that shows typical usage.
-
-Example:
-```bash
-# Configure a device
-igsdk configure --target router1.example.com --config network.yaml
-
-# Output:
-# ✓ Connected to router1.example.com
-# ✓ Configuration validated
-# ✓ Changes applied successfully
-```
--->
 
 ## Usage
 
-<!--
-MAINTAINER: Provide comprehensive usage examples organized by use case.
-Include both simple and advanced examples. Show common workflows.
--->
+### Platform Client
 
-### Basic Usage
-
-```bash
-# Add basic usage examples
+```go
+client, err := igsdk.NewPlatformClient("platform.example.com",
+    igsdk.WithBasicAuth("admin", "password"),
+    igsdk.WithTLS(true),
+    igsdk.WithVerify(true),
+    igsdk.WithTimeout(30 * time.Second),
+    igsdk.WithTTL(15 * time.Minute),
+)
 ```
 
-### Configuration
+### Gateway Client
 
-<!--
-MAINTAINER: If your project uses configuration files, show the format
-and explain the key options. Include a minimal working example.
-
-Example:
-```yaml
-# config.yaml
-target: production
-devices:
-  - hostname: router1.example.com
-    type: cisco_ios
-options:
-  timeout: 30
-  retry: 3
+```go
+client, err := igsdk.NewGatewayClient("gateway.example.com",
+    igsdk.WithBasicAuth("admin@itential", "password"),
+)
+// Requests are automatically prefixed with /api/v2.0
+resp, err := client.Get(ctx, "/devices", nil)
 ```
--->
 
-### Advanced Examples
+### OAuth Authentication (Platform only)
 
-<!--
-MAINTAINER: Show more complex scenarios that power users might need.
-Include examples for:
-- Automation/scripting
-- Integration with other tools
-- Performance optimization
-- Edge cases
--->
+```go
+client, err := igsdk.NewPlatformClient("platform.example.com",
+    igsdk.WithOAuth("my-client-id", "my-client-secret"),
+)
+```
 
-```bash
-# Add advanced usage examples
+### Making Requests
+
+All HTTP methods accept a `context.Context`, a path, optional query parameters, and optional
+per-request options:
+
+```go
+// GET with query parameters
+params := url.Values{"limit": []string{"10"}, "skip": []string{"0"}}
+resp, err := client.Get(ctx, "/adapters", params)
+
+// POST with a JSON payload
+payload := map[string]any{"name": "MyAdapter", "type": "HTTP"}
+resp, err := client.Post(ctx, "/adapters", nil, payload)
+
+// PUT / PATCH / DELETE
+resp, err := client.Put(ctx, "/adapters/123", nil, updates)
+resp, err := client.Patch(ctx, "/adapters/123", nil, changes)
+resp, err := client.Delete(ctx, "/adapters/123", nil)
+```
+
+### Handling Responses
+
+```go
+resp, err := client.Get(ctx, "/users/me", nil)
+if err != nil {
+    return err
+}
+
+// Parse JSON
+var user map[string]any
+if err := resp.JSON(&user); err != nil {
+    return err
+}
+
+// Raw text
+body := resp.Text()
+
+// Status inspection
+fmt.Println(resp.StatusCode())
+fmt.Println(resp.IsSuccess())
+fmt.Println(resp.IsError())
+```
+
+### Error Handling
+
+HTTP 4xx/5xx responses are returned as `*igsdk.HTTPStatusError`:
+
+```go
+resp, err := client.Get(ctx, "/resource/missing", nil)
+if err != nil {
+    var httpErr *igsdk.HTTPStatusError
+    if errors.As(err, &httpErr) {
+        switch httpErr.StatusCode {
+        case 404:
+            fmt.Println("resource not found")
+        case 401:
+            fmt.Println("authentication failed")
+        default:
+            fmt.Printf("HTTP error: %s\n", httpErr.Status)
+        }
+    }
+    return err
+}
+```
+
+### Logging
+
+```go
+// Text logger (stderr, Info level by default)
+logger := igsdk.NewLogger(
+    igsdk.WithLogLevel(slog.LevelDebug),
+    igsdk.WithLogOutput(os.Stdout),
+)
+
+// JSON logger
+logger := igsdk.NewJSONLogger(igsdk.WithLogLevel(slog.LevelDebug))
+
+client, err := igsdk.NewPlatformClient("platform.example.com",
+    igsdk.WithLogger(logger),
+)
+```
+
+### Sensitive Data Redaction
+
+```go
+scanner := igsdk.NewScanner()
+
+logger := igsdk.NewLogger(igsdk.WithSensitiveDataRedaction(scanner))
+
+client, err := igsdk.NewPlatformClient("platform.example.com",
+    igsdk.WithLogger(logger),
+    igsdk.WithScanner(scanner),
+)
+```
+
+### Request Tracing
+
+Attach correlation fields to a context; the SDK includes them in every log entry
+for requests made with that context:
+
+```go
+ctx = igsdk.LogContext(ctx, "request_id", reqID, "tenant", tenantID)
+resp, err := client.Get(ctx, "/resources", nil)
+```
+
+### Custom Request Headers
+
+```go
+resp, err := client.Get(ctx, "/report", nil,
+    igsdk.WithHeader("Accept", "application/xml"),
+)
 ```
 
 ## Documentation
 
-<!--
-MAINTAINER: Link to additional documentation resources.
-Remove sections that don't apply to your project.
--->
-
+- [API Reference](https://pkg.go.dev/github.com/itential/igsdk) - Full GoDoc reference
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute to this project
-- [Code of Conduct](CODE_OF_CONDUCT.md) - Community guidelines
 - [Changelog](CHANGELOG.md) - Version history and release notes
-
-<!--
-MAINTAINER: Add links to additional docs if you have them:
-- [API Reference](docs/api.md)
-- [Configuration Guide](docs/configuration.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Examples](examples/)
--->
 
 ## Contributing
 
@@ -204,14 +215,6 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 Before contributing, you'll need to sign our [Contributor License Agreement](CLA.md).
 
 ## Support
-
-<!--
-MAINTAINER: Describe how users can get help. Options include:
-- GitHub Issues (for bugs)
-- GitHub Discussions (for questions)
-- Email support
-- Community chat (Slack, Discord)
--->
 
 - **Bug Reports**: [Open an issue](https://github.com/itential/igsdk/issues/new)
 - **Questions**: [Start a discussion](https://github.com/itential/igsdk/discussions)
@@ -224,5 +227,5 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 ---
 
 <p align="center">
-  Made with ❤️ by the <a href="https://github.com/itential">Itential</a> community
+  Made with ❤️  by the <a href="https://github.com/itential">Itential</a> community
 </p>
