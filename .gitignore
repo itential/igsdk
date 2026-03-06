@@ -13,10 +13,9 @@
 *.out
 cover.*
 cover/
-coverage.out
-coverage.html
 *.cov
 *.coverprofile
+coverage.*
 
 # Go workspace file
 go.work
