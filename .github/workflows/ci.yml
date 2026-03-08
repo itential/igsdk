@@ -1,12 +1,39 @@
+# ---
+# Workflow: CI
+#
+# Runs on all pull requests targeting main and on direct pushes to main.
+# Validates formatting, vets the code, runs the test suite with the race
+# detector, and generates a coverage report. All checks must pass before
+# a pull request can be merged.
+#
+# Jobs: ci
+# Secrets required: none
+# Produces: coverage.txt artifact (retained 7 days)
+# ---
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+# Cancel in-progress runs for the same branch/PR on new pushes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
+  # -- ci
+  # Installs golangci-lint, then runs fmt, vet, race-detector tests, and
+  # coverage via `make ci`. Mirrors exactly what developers run locally.
   ci:
     name: CI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -14,9 +41,19 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          # Automatically caches the module cache keyed on go.sum
+          cache: true
 
       - name: Install tools
         run: make tools
 
       - name: Run CI
         run: make ci
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.txt
+          retention-days: 7
