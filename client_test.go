@@ -970,7 +970,7 @@ func TestSendNilContext(t *testing.T) {
 	}
 }
 
-func TestOAuthMissingTokenDoesNotFail(t *testing.T) {
+func TestOAuthMissingTokenReturnsError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/oauth/token" {
 			w.WriteHeader(http.StatusOK)
@@ -986,15 +986,15 @@ func TestOAuthMissingTokenDoesNotFail(t *testing.T) {
 		t.Fatalf("factory error: %v", err)
 	}
 	_, err = c.Get(context.Background(), "/adapters", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err == nil {
+		t.Fatal("expected error when access_token field is absent")
 	}
-	if c.client.token != "" {
-		t.Fatal("expected empty token")
+	if !strings.Contains(err.Error(), "access_token") {
+		t.Fatalf("expected error mentioning access_token, got: %v", err)
 	}
 }
 
-func TestPlatformAuthInvalidOAuthJSONStillSucceeds(t *testing.T) {
+func TestOAuthInvalidJSONReturnsError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/oauth/token" {
 			w.WriteHeader(http.StatusOK)
@@ -1010,8 +1010,8 @@ func TestPlatformAuthInvalidOAuthJSONStillSucceeds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("factory error: %v", err)
 	}
-	if _, err := c.Get(context.Background(), "/x", nil); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if _, err := c.Get(context.Background(), "/x", nil); err == nil {
+		t.Fatal("expected error when OAuth response body is invalid JSON")
 	}
 }
 
