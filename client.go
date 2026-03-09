@@ -532,12 +532,14 @@ func (c *baseClient) authenticatePlatform(ctx context.Context) error {
 		}
 
 		var tokenResp map[string]any
-		if err := res.JSON(&tokenResp); err == nil {
-			if tok, ok := tokenResp["access_token"].(string); ok {
-				c.token = tok
-			}
+		if err := res.JSON(&tokenResp); err != nil {
+			return fmt.Errorf("decode OAuth token response: %w", err)
 		}
-
+		tok, ok := tokenResp["access_token"].(string)
+		if !ok || tok == "" {
+			return fmt.Errorf("OAuth token response missing access_token field")
+		}
+		c.token = tok
 		return nil
 	}
 
