@@ -1,5 +1,6 @@
 # igsdk
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/itential/igsdk.svg)](https://pkg.go.dev/github.com/itential/igsdk)
 [![Build Status](https://github.com/itential/igsdk/actions/workflows/ci.yml/badge.svg)](https://github.com/itential/igsdk/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/itential/igsdk)](https://github.com/itential/igsdk/releases)
