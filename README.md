@@ -5,13 +5,13 @@
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/itential/igsdk)](https://github.com/itential/igsdk/releases)
 
-A Go SDK for the Itential Automation Platform and Itential Automation Gateway. It provides
+A Go SDK for the Itential Platform and Itential Gateway. It provides
 idiomatic HTTP clients with automatic authentication, TTL-based re-authentication, structured
 logging with sensitive-data redaction, and context-aware request tracing.
 
 ## Features
 
-- **Dual-client support** - Separate `PlatformClient` and `GatewayClient` for the Itential Automation Platform and Gateway
+- **Dual-client support** - Separate `PlatformClient` and `GatewayClient` for the Itential Platform and Gateway
 - **Automatic authentication** - Basic Auth and OAuth 2.0 (Client Credentials) handled transparently on every request
 - **TTL-based re-authentication** - Configurable token lifetimes with automatic re-auth before expiry
 - **Structured logging** - Text and JSON loggers built on `log/slog` with optional sensitive-data redaction
